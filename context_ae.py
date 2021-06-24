@@ -158,6 +158,8 @@ class CEncoder():
                 imgs,masked,missings = x_batch_train
         
                 idx = np.random.choice(range(self.batch_size), size=half_batch, replace=False, p=None)
+             
+            
                 #half_imgs = np.array([imgs[i] for i in idx])
                 half_masked = np.array([masked[i] for i in idx])
                 half_missing = np.array([missings[i] for i in idx])
@@ -194,9 +196,10 @@ class CEncoder():
                     self.discriminator.save_weights(self.dir_path+"/context_discriminator"+str(step_counter))
 
                 with writer.as_default():
-                    tf.summary.scalar('d_loss_real', d_loss_real, step=step_counter)
-                    tf.summary.scalar('d_loss_fake', d_loss_fake, step=step_counter)
-                    tf.summary.scalar('d_loss', d_loss, step=step_counter)
-                    tf.summary.scalar('g_loss',g_loss , step=step_counter)
+                    tf.summary.scalar('d_loss', d_loss[0], step=step_counter)
+                    tf.summary.scalar('discriminator_accuracy', 100*d_loss[1], step=step_counter)
+                    tf.summary.scalar('g_loss_discriminator',g_loss[0] , step=step_counter)
+                    tf.summary.scalar('g_loss_mse',g_loss[0] , step=step_counter)
+                    tf.summary.scalar('g_loss_accuracy',100*g_loss[4] , step=step_counter)
 
                     

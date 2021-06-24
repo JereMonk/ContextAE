@@ -21,7 +21,7 @@ def main(arg):
     CKPT_PERIOD = int(custom_data["CKPT_PERIOD"])
     BATCH_SIZE =  int(custom_data["BATCH_SIZE"])
 
-    generator = get_generator(JSON_PATHS_TRAIN,10,BATCH_SIZE,damaged=False,dim_missing=64)
+    generator = get_generator(JSON_PATHS_TRAIN,BATCH_SIZE,128,damaged=False,dim_missing=64)
 
     ce = CEncoder(batch_size=BATCH_SIZE,dir_path = EXP_FOLDER,cpkt_period= CKPT_PERIOD)
 
