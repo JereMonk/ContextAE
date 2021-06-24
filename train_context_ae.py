@@ -16,15 +16,14 @@ def main(arg):
         custom_data = yaml.safe_load(stream)
 
     
-                  
-  
-
+                
     JSON_PATHS_TRAIN = custom_data["JSON_PATHS_TRAIN"]
     CKPT_PERIOD = int(custom_data["CKPT_PERIOD"])
+    BATCH_SIZE =  int(custom_data["BATCH_SIZE"])
 
-    generator = get_generator(JSON_PATHS_TRAIN,10,128,damaged=False,dim_missing=64)
+    generator = get_generator(JSON_PATHS_TRAIN,10,BATCH_SIZE,damaged=False,dim_missing=64)
 
-    ce = CEncoder(dir_path = EXP_FOLDER,cpkt_period= CKPT_PERIOD)
+    ce = CEncoder(batch_size=BATCH_SIZE,dir_path = EXP_FOLDER,cpkt_period= CKPT_PERIOD)
 
     ce.train(generator)
 

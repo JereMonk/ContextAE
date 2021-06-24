@@ -14,25 +14,9 @@ import os
 import numpy as np
 
 
-def compute_mse(a,b):
-    A = a.flatten()
-    B = b.flatten()
-    mse = mean_squared_error(A,B)
-    return mse
-
-def compute_ssim(a,b):
-    ssim = []
-    num_imgs = a.shape[0]
-    for i in range(num_imgs):
-        ssim.append( SSIM(a[i],b[i],
-                      data_range=(1-(-1)),
-                      multichannel=True))
-
-    # dssim
-    return ( 1 - np.array(ssim).mean() ) / 2
 
 class CEncoder():
-    def __init__(self,dir_path,cpkt_period):
+    def __init__(self,batch_size,dir_path,cpkt_period):
         self.img_rows = 128
         self.img_cols = 128
         self.mask_height = 64
@@ -41,6 +25,7 @@ class CEncoder():
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.patch_shape = (self.mask_height,self.mask_width,self.channels)
         self.overlap = 7
+        self.batch_size=batch_size
 
         self.ckpt_period = cpkt_period
 
@@ -159,11 +144,11 @@ class CEncoder():
 
     
     
-    def train(self, generator,max_iter=1, batch_size=10,start_iter=0):
+    def train(self, generator,max_iter=1,start_iter=0):
         
         step_counter=start_iter
         
-        half_batch = int(batch_size / 2)
+        half_batch = int(self.batch_size / 2)
         writer = tf.summary.create_file_writer(self.dir_path)
 
         while(step_counter<max_iter):
@@ -172,7 +157,7 @@ class CEncoder():
                 
                 imgs,masked,missings = x_batch_train
         
-                idx = np.random.choice(range(batch_size), size=half_batch, replace=False, p=None)
+                idx = np.random.choice(range(self.batch_size), size=half_batch, replace=False, p=None)
                 #half_imgs = np.array([imgs[i] for i in idx])
                 half_masked = np.array([masked[i] for i in idx])
                 half_missing = np.array([missings[i] for i in idx])
@@ -195,7 +180,7 @@ class CEncoder():
                 #  Train Generator
                 # ---------------------
               
-                valid = np.ones((batch_size, 1))
+                valid = np.ones((self.batch_size, 1))
 
                 # Train the generator
                 g_loss = self.combined.train_on_batch(masked, [missings, valid])
