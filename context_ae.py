@@ -16,7 +16,7 @@ import numpy as np
 
 
 class CEncoder():
-    def __init__(self,batch_size,dir_path,cpkt_period):
+    def __init__(self,batch_size,dir_path,cpkt_period,path_discriminator,path_generator):
         self.img_rows = 128
         self.img_cols = 128
         self.mask_height = 64
@@ -26,6 +26,8 @@ class CEncoder():
         self.patch_shape = (self.mask_height,self.mask_width,self.channels)
         self.overlap = 7
         self.batch_size=batch_size
+        self.path_discriminator=path_discriminator
+        self.path_generator=path_generator
 
         self.ckpt_period = cpkt_period
 
@@ -43,6 +45,14 @@ class CEncoder():
         self.autoencoder = self.build_autoencoder()
         # Construct discriminator
         self.discriminator = self.build_discriminator()
+        
+        #Load weights 
+        if(path_generator!=""):
+            self.autoencoder.load_weights(dir_path+"/"+path_generator)
+        if(path_discriminator!=""):
+            self.discriminator.load_weights(dir_path+"/"+path_discriminator)
+        
+
         self.discriminator.compile(loss='binary_crossentropy',
             optimizer=optimizer_adv, metrics=['accuracy'])
         # Construct GAN
@@ -152,24 +162,25 @@ class CEncoder():
         writer = tf.summary.create_file_writer(self.dir_path)
 
         while(step_counter<max_iter):
-            for _, x_batch_train in enumerate(generator):
-                step_counter+=1
-                
-                imgs,masked,missings = x_batch_train
-        
-                idx = np.random.choice(range(self.batch_size), size=half_batch, replace=False, p=None)
-             
+            #for _, x_batch_train in enumerate(generator):
+            generator.on_epoch_end()
             
-                #half_imgs = np.array([imgs[i] for i in idx])
-                half_masked = np.array([masked[i] for i in idx])
-                half_missing = np.array([missings[i] for i in idx])
-                
-                
+            for i in range(0,len(generator),2):
+                step_counter+=1
+
                 # ---------------------
                 #  Train Discriminator
                 # ---------------------
+
+                x_batch_train = generator.__getitem__(i)
+                imgs,masked,missings = x_batch_train
+
+                idx = np.random.choice(range(self.batch_size), size=half_batch, replace=False, p=None)
+    
+                half_masked = np.array([masked[i] for i in idx])
+                half_missing = np.array([missings[i] for i in idx])
                 
-            
+    
                 gen_missing = self.autoencoder.predict(half_masked)
                 valid = np.ones((half_batch, 1))
                 fake = np.zeros((half_batch, 1))
@@ -181,6 +192,9 @@ class CEncoder():
                 # ---------------------
                 #  Train Generator
                 # ---------------------
+
+                x_batch_train = generator.__getitem__(i+1)
+                imgs,masked,missings = x_batch_train
               
                 valid = np.ones((self.batch_size, 1))
 
@@ -193,7 +207,7 @@ class CEncoder():
 
                 if step_counter%self.ckpt_period ==0:
                     self.autoencoder.save_weights(self.dir_path+"/ckpt_context_generator"+str(step_counter))
-                    self.discriminator.save_weights(self.dir_path+"/context_discriminator"+str(step_counter))
+                    self.discriminator.save_weights(self.dir_path+"/ckpt_context_discriminator"+str(step_counter))
 
                 with writer.as_default():
                     tf.summary.scalar('d_loss', d_loss[0], step=step_counter)
